@@ -1,0 +1,38 @@
+# ================================================================
+# .gitignore — Proyecto ACH/TEF
+# ================================================================
+
+# ── SECRETOS — NUNCA subir ───────────────────────────────────────
+.env.local
+.env.*.local
+.env.production
+*.env
+
+# ── Next.js ──────────────────────────────────────────────────────
+web/.next/
+web/out/
+web/node_modules/
+web/.npm
+
+# ── Build COBOL ──────────────────────────────────────────────────
+output/*.exe
+output/*.o
+output/ACH-TEF
+
+# ── Sistema operativo ────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editores ─────────────────────────────────────────────────────
+.vscode/settings.json
+*.swp
+*.swo
+*~
+
+# ── Logs ─────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+
+# ── Claude Preview ───────────────────────────────────────────────
+web/.claude/
