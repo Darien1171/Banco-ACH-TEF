@@ -4,7 +4,7 @@
 // /login — Formulario de ingreso
 // ================================================================
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createBrowserClient } from '@supabase/ssr'
@@ -20,6 +20,21 @@ export default function LoginPage() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
+
+  // Detecta tokens en el hash (flujo implicit de Supabase)
+  useEffect(() => {
+    const hash = window.location.hash
+    if (!hash) return
+    const params = new URLSearchParams(hash.slice(1))
+    const type = params.get('type')
+    if (type === 'recovery') {
+      // El SDK de Supabase ya leyó el token del hash y estableció la sesión
+      router.replace('/reset-password')
+    } else if (params.get('access_token')) {
+      // Confirmación de email u otro flujo — ir al dashboard
+      router.replace('/')
+    }
+  }, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
