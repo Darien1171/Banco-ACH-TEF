@@ -13,6 +13,7 @@ web/.next/
 web/out/
 web/node_modules/
 web/.npm
+web/tsconfig.tsbuildinfo
 
 # ── Build COBOL ──────────────────────────────────────────────────
 output/*.exe
