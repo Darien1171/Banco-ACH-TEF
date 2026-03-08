@@ -294,7 +294,7 @@ async function registrarAuditoria(args: {
   obs: string
 }) {
   const numAudit = generarId('AUD')
-  await serverClient.from('auditoria_transacciones').insert({
+  const { error } = await serverClient.from('auditoria_transacciones').insert({
     num_auditoria:    numAudit,
     num_orden:        args.numOrden,
     fec_transaccion:  args.hoy,
@@ -307,4 +307,5 @@ async function registrarAuditoria(args: {
     mto_procesado:    args.monto,
     observacion:      args.obs,
   })
+  if (error) console.error('[Auditoría] Error al insertar:', JSON.stringify(error))
 }
