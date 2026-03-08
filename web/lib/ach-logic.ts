@@ -53,14 +53,6 @@ async function calcularComision(monto: number): Promise<number> {
   return param.mto_comision_fija
 }
 
-// ── 2. Detección de fraude ───────────────────────────────────────
-function esSospechosa(monto: number, promedioCliente: number): boolean {
-  // Hora en Colombia (UTC-5)
-  const horaColombia = (new Date().getUTCHours() - 5 + 24) % 24
-  if (horaColombia >= 23 || horaColombia < 4) return true
-  if (promedioCliente > 0 && monto > promedioCliente * 10) return true
-  return false
-}
 
 // ── FLUJO PRINCIPAL ──────────────────────────────────────────────
 export async function procesarTransferencia(
@@ -129,17 +121,6 @@ export async function procesarTransferencia(
     if (usadoHoy + sol.monto > limite.limite_diario) {
       return { exito: false, cod_resultado: 5, mensaje: 'Supera el límite diario permitido.' }
     }
-  }
-
-  // ── PASO 7: Detección de fraude ────────────────────────────────
-  const promedio = 500_000 // promedio por defecto
-  if (esSospechosa(sol.monto, promedio)) {
-    await registrarAuditoria({
-      numOrden: null, hoy, hora, usuario, terminal,
-      estado: 'SOSPECHOSA', monto: sol.monto,
-      obs: 'Transacción marcada para revisión por análisis de fraude.'
-    })
-    return { exito: false, cod_resultado: 6, mensaje: 'Transacción marcada como sospechosa. Requiere revisión manual.' }
   }
 
   // ── PASO 8-9: Bloquear fondos + Crear orden (dentro de una sola operación) ──
