@@ -2,6 +2,8 @@ import { serverClient } from '@/lib/supabase'
 import EstadoBadge from '@/components/EstadoBadge'
 import type { AuditoriaTransaccion } from '@/lib/tipos'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AuditoriaPage() {
   const { data } = await serverClient
     .from('auditoria_transacciones')
