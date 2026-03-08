@@ -55,9 +55,10 @@ async function calcularComision(monto: number): Promise<number> {
 
 // ── 2. Detección de fraude ───────────────────────────────────────
 function esSospechosa(monto: number, promedioCliente: number): boolean {
-  const hora = new Date().getHours()
-  if (hora >= 23 || hora < 6) return true
-  if (promedioCliente > 0 && monto > promedioCliente * 3) return true
+  // Hora en Colombia (UTC-5)
+  const horaColombia = (new Date().getUTCHours() - 5 + 24) % 24
+  if (horaColombia >= 23 || horaColombia < 4) return true
+  if (promedioCliente > 0 && monto > promedioCliente * 10) return true
   return false
 }
 
