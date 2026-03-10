@@ -145,7 +145,7 @@ CREATE TABLE auditoria_transacciones (
   hoa_inicio            VARCHAR(8)     NOT NULL,
   hoa_fin               VARCHAR(8),
   tip_transaccion       VARCHAR(25)    NOT NULL DEFAULT 'TRANSFERENCIA_ACH',
-  cod_usuario           VARCHAR(36),
+  cod_usuario           VARCHAR(100),
   terminal              VARCHAR(36),
   estado_final          VARCHAR(25)    NOT NULL,
   mto_procesado         NUMERIC(15,2)  NOT NULL DEFAULT 0,
