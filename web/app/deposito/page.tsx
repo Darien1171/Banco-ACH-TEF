@@ -1,17 +1,24 @@
 // ================================================================
-// /deposito — Depósito demo de fondos
+// /deposito — Depósito demo de fondos (multi-cuenta)
 // ================================================================
 
 import { redirect } from 'next/navigation'
-import { getSession, getCuentaDelUsuario } from '@/lib/auth'
+import { getSession, getCuentasDelUsuario, BANCOS } from '@/lib/auth'
 import DepositoForm from '@/components/DepositoForm'
 
 export default async function DepositoPage() {
   const user = await getSession()
   if (!user) redirect('/login')
 
-  const cuenta = await getCuentaDelUsuario(user.id)
-  if (!cuenta) redirect('/')
+  const cuentas = await getCuentasDelUsuario(user.id)
+  if (cuentas.length === 0) redirect('/')
+
+  const cuentasResumen = cuentas.map(c => ({
+    cod:    c.cod_cuenta,
+    nombre: c.nom_cliente,
+    saldo:  c.sal_disponible,
+    banco:  BANCOS[c.cod_banco] ?? c.cod_banco,
+  }))
 
   return (
     <div>
@@ -23,11 +30,7 @@ export default async function DepositoPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6">
-        <DepositoForm
-          codCuenta={cuenta.cod_cuenta}
-          nombreCliente={cuenta.nom_cliente}
-          saldoActual={cuenta.sal_disponible}
-        />
+        <DepositoForm cuentas={cuentasResumen} />
       </div>
     </div>
   )

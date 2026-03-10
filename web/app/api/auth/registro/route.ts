@@ -9,7 +9,7 @@ import { enviarEmailBienvenida, enviarSMSBienvenida } from '@/lib/notificaciones
 
 export async function POST(req: NextRequest) {
   try {
-    const { nombre, email, password, telefono, tipoCuenta } = await req.json()
+    const { nombre, email, password, telefono, tipoCuenta, codBanco = '001' } = await req.json()
 
     if (!nombre || !email || !password || !tipoCuenta) {
       return NextResponse.json({ error: 'Faltan campos requeridos.' }, { status: 400 })
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     const userId     = authData.user.id
     const codCliente = generarCodCliente()
-    const codCuenta  = generarNumeroCuenta(tipoCuenta as 'A' | 'C')
+    const codCuenta  = generarNumeroCuenta(tipoCuenta as 'A' | 'C', codBanco)
     const hoy        = new Date().toISOString().slice(0, 10)
 
     // ── 2. Crear cuenta bancaria ─────────────────────────────────
@@ -57,15 +57,18 @@ export async function POST(req: NextRequest) {
       mca_congelada:        false,
       fec_apertura:         hoy,
       fec_ultima_transaccion: null,
-      cod_banco:            '001',
+      cod_banco:            codBanco,
       user_id:              userId,
       telefono:             telefono || null,
       email:                email,
     })
 
     if (cuentaError) {
-      console.error('[Registro] Error cuenta:', cuentaError)
-      return NextResponse.json({ error: 'Error al crear cuenta bancaria.' }, { status: 500 })
+      console.error('[Registro] Error cuenta:', JSON.stringify(cuentaError, null, 2))
+      return NextResponse.json(
+        { error: 'Error al crear cuenta bancaria.', detalle: cuentaError.message, codigo: cuentaError.code },
+        { status: 500 }
+      )
     }
 
     // ── 3. Crear límites del cliente ─────────────────────────────
@@ -87,7 +90,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, codCuenta })
   } catch (err) {
-    console.error('[Registro]', err)
-    return NextResponse.json({ error: 'Error interno.' }, { status: 500 })
+    console.error('[Registro] Excepción no esperada:', err)
+    return NextResponse.json(
+      { error: 'Error interno.', detalle: err instanceof Error ? err.message : String(err) },
+      { status: 500 }
+    )
   }
 }

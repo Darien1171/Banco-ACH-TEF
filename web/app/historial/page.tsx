@@ -1,10 +1,10 @@
 // ================================================================
-// /historial — Historial de transferencias del usuario actual
+// /historial — Historial de transferencias del usuario (multi-cuenta)
 // ================================================================
 
 import { redirect } from 'next/navigation'
 import { serverClient } from '@/lib/supabase'
-import { getSession, getCuentaDelUsuario } from '@/lib/auth'
+import { getSession, getCuentasDelUsuario } from '@/lib/auth'
 import TablaOrdenes from '@/components/TablaOrdenes'
 import type { OrdenTransferencia } from '@/lib/tipos'
 
@@ -12,13 +12,14 @@ export default async function HistorialPage() {
   const user = await getSession()
   if (!user) redirect('/login')
 
-  const cuenta = await getCuentaDelUsuario(user.id)
+  const cuentas = await getCuentasDelUsuario(user.id)
+  const codigoCuentas = cuentas.map(c => c.cod_cuenta)
 
-  const { data } = cuenta
+  const { data } = codigoCuentas.length > 0
     ? await serverClient
         .from('ordenes_transferencia')
         .select('*')
-        .eq('cod_cuenta_origen', cuenta.cod_cuenta)
+        .in('cod_cuenta_origen', codigoCuentas)
         .order('fec_creacion', { ascending: false })
         .order('hoa_creacion', { ascending: false })
         .limit(100)
@@ -37,7 +38,9 @@ export default async function HistorialPage() {
     <div>
       <div className="mb-6 sm:mb-8">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Historial de Transferencias</h1>
-        <p className="text-gray-500 text-sm mt-1">Tus transferencias realizadas.</p>
+        <p className="text-gray-500 text-sm mt-1">
+          Tus transferencias realizadas{cuentas.length > 1 ? ` en ${cuentas.length} cuentas` : ''}.
+        </p>
       </div>
 
       {/* Resumen */}

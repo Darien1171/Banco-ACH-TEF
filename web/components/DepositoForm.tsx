@@ -1,26 +1,34 @@
 'use client'
 
 // ================================================================
-// DepositoForm — Formulario de depósito demo
+// DepositoForm — Formulario de depósito demo (multi-cuenta)
 // ================================================================
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+interface CuentaResumen {
+  cod:    string
+  nombre: string
+  saldo:  number
+  banco?: string
+}
+
 interface DepositoFormProps {
-  codCuenta:  string
-  nombreCliente: string
-  saldoActual: number
+  cuentas: CuentaResumen[]
 }
 
 const MONTOS_RAPIDOS = [50_000, 200_000, 500_000, 1_000_000]
 
-export default function DepositoForm({ codCuenta, nombreCliente, saldoActual }: DepositoFormProps) {
+export default function DepositoForm({ cuentas }: DepositoFormProps) {
   const router   = useRouter()
+  const [codCuentaSeleccionada, setCodCuenta] = useState(cuentas[0]?.cod ?? '')
   const [monto,   setMonto]   = useState<number | ''>('')
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState<string | null>(null)
   const [success, setSuccess] = useState<number | null>(null)
+
+  const cuentaActual = cuentas.find(c => c.cod === codCuentaSeleccionada) ?? cuentas[0]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,7 +42,7 @@ export default function DepositoForm({ codCuenta, nombreCliente, saldoActual }: 
       const res  = await fetch('/api/deposito', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ monto }),
+        body:    JSON.stringify({ monto, codCuenta: cuentaActual?.cod }),
       })
       const data = await res.json()
 
@@ -55,14 +63,36 @@ export default function DepositoForm({ codCuenta, nombreCliente, saldoActual }: 
   return (
     <div className="max-w-md space-y-6">
 
+      {/* Selector de cuenta destino */}
+      {cuentas.length > 1 && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Cuenta destino</label>
+          <select
+            value={codCuentaSeleccionada}
+            onChange={e => { setCodCuenta(e.target.value); setSuccess(null); setError(null) }}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-banco-500"
+          >
+            {cuentas.map(c => (
+              <option key={c.cod} value={c.cod}>
+                {c.banco ? `[${c.banco}] ` : ''}{c.cod}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Tarjeta de cuenta */}
-      <div className="rounded-xl bg-banco-800 text-white p-5">
-        <p className="text-xs text-blue-300 mb-1">Cuenta destino del depósito</p>
-        <p className="font-semibold">{nombreCliente}</p>
-        <p className="font-mono text-xs text-blue-300 mt-0.5">{codCuenta}</p>
-        <p className="text-2xl font-bold mt-3">${saldoActual.toLocaleString('es-CO')}</p>
-        <p className="text-xs text-blue-300">saldo actual</p>
-      </div>
+      {cuentaActual && (
+        <div className="rounded-xl bg-banco-800 text-white p-5">
+          <p className="text-xs text-blue-300 mb-1">
+            Cuenta destino del depósito{cuentaActual.banco ? ` — ${cuentaActual.banco}` : ''}
+          </p>
+          <p className="font-semibold">{cuentaActual.nombre}</p>
+          <p className="font-mono text-xs text-blue-300 mt-0.5">{cuentaActual.cod}</p>
+          <p className="text-2xl font-bold mt-3">${cuentaActual.saldo.toLocaleString('es-CO')}</p>
+          <p className="text-xs text-blue-300">saldo actual</p>
+        </div>
+      )}
 
       {/* Alerta demo */}
       <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">

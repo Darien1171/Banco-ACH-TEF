@@ -1,20 +1,23 @@
 // ================================================================
-// /transferencia — Nueva transferencia (cuenta del usuario actual)
+// /transferencia — Nueva transferencia (multi-cuenta)
 // ================================================================
 
 import { redirect } from 'next/navigation'
-import { getSession, getCuentaDelUsuario } from '@/lib/auth'
+import { getSession, getCuentasDelUsuario, BANCOS } from '@/lib/auth'
 import TransferenciaForm from '@/components/TransferenciaForm'
 
 export default async function NuevaTransferenciaPage() {
   const user = await getSession()
   if (!user) redirect('/login')
 
-  const cuenta = await getCuentaDelUsuario(user.id)
+  const cuentas = await getCuentasDelUsuario(user.id)
 
-  const cuentas = cuenta
-    ? [{ cod: cuenta.cod_cuenta, nombre: cuenta.nom_cliente, saldo: cuenta.sal_disponible }]
-    : []
+  const cuentasResumen = cuentas.map(c => ({
+    cod:    c.cod_cuenta,
+    nombre: c.nom_cliente,
+    saldo:  c.sal_disponible,
+    banco:  BANCOS[c.cod_banco] ?? c.cod_banco,
+  }))
 
   return (
     <div>
@@ -26,7 +29,7 @@ export default async function NuevaTransferenciaPage() {
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6">
-        <TransferenciaForm cuentas={cuentas} />
+        <TransferenciaForm cuentas={cuentasResumen} />
       </div>
     </div>
   )

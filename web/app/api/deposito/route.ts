@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createSSRClient, serverClient } from '@/lib/supabase'
-import { getCuentaDelUsuario } from '@/lib/auth'
+import { getCuentasDelUsuario } from '@/lib/auth'
 import { enviarEmailDeposito } from '@/lib/notificaciones'
 
 export async function POST(req: NextRequest) {
@@ -17,13 +17,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No autorizado.' }, { status: 401 })
     }
 
-    const cuenta = await getCuentaDelUsuario(user.id)
+    // ── Validar monto y cuenta ───────────────────────────────────
+    const { monto, codCuenta } = await req.json()
+
+    // Verificar que la cuenta pertenece al usuario
+    const cuentas = await getCuentasDelUsuario(user.id)
+    const cuenta = codCuenta
+      ? cuentas.find(c => c.cod_cuenta === codCuenta)
+      : cuentas[0]
+
     if (!cuenta) {
       return NextResponse.json({ error: 'Cuenta no encontrada.' }, { status: 404 })
     }
-
-    // ── Validar monto ────────────────────────────────────────────
-    const { monto } = await req.json()
     const montoNum = Number(monto)
 
     if (!montoNum || montoNum < 10_000) {

@@ -21,6 +21,7 @@ export default function RegistroPage() {
     password2:  '',
     telefono:   '',
     tipoCuenta: 'A' as 'A' | 'C',
+    codBanco:   '001',
   })
 
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }))
@@ -56,6 +57,7 @@ export default function RegistroPage() {
           password:   form.password,
           telefono:   form.telefono.trim() || null,
           tipoCuenta: form.tipoCuenta,
+          codBanco:   form.codBanco,
         }),
       })
 
@@ -137,6 +139,20 @@ export default function RegistroPage() {
               placeholder="+57 300 000 0000"
               className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-banco-500"
             />
+          </div>
+
+          {/* Banco */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Banco</label>
+            <select
+              value={form.codBanco}
+              onChange={e => set('codBanco', e.target.value)}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-banco-500"
+            >
+              <option value="001">Banco A</option>
+              <option value="002">Banco B</option>
+              <option value="003">Banco C</option>
+            </select>
           </div>
 
           {/* Tipo de cuenta */}

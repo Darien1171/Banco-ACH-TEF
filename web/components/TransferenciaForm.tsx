@@ -13,6 +13,7 @@ interface CuentaResumen {
   cod:    string
   nombre: string
   saldo:  number
+  banco?: string
 }
 
 interface TransferenciaFormProps {
@@ -97,7 +98,7 @@ export default function TransferenciaForm({ cuentas }: TransferenciaFormProps) {
         >
           {cuentas.map(c => (
             <option key={c.cod} value={c.cod}>
-              {c.cod} — {c.nombre}
+              {c.banco ? `[${c.banco}] ` : ''}{c.cod} — {c.nombre}
             </option>
           ))}
         </select>

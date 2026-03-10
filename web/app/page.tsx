@@ -1,34 +1,41 @@
 // ================================================================
-// Dashboard — muestra la cuenta del usuario logueado y sus últimas
-// transferencias
+// Dashboard — cuentas del usuario (multi-banco) y últimas transferencias
 // ================================================================
 
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { serverClient } from '@/lib/supabase'
-import { getSession, getCuentaDelUsuario } from '@/lib/auth'
+import { getSession, getCuentasDelUsuario } from '@/lib/auth'
 import TablaOrdenes from '@/components/TablaOrdenes'
 import type { OrdenTransferencia, AuditoriaTransaccion } from '@/lib/tipos'
+
+const BANCOS: Record<string, string> = {
+  '001': 'Banco A',
+  '002': 'Banco B',
+  '003': 'Banco C',
+}
 
 export default async function DashboardPage() {
   const user = await getSession()
   if (!user) redirect('/login')
 
-  const cuenta = await getCuentaDelUsuario(user.id)
+  const cuentas = await getCuentasDelUsuario(user.id)
 
   const hoy = new Date().toISOString().slice(0, 10)
 
-  // Últimas transferencias del usuario
-  const { data: ordenesData } = cuenta
+  // Últimas transferencias de TODAS las cuentas del usuario
+  const codigoCuentas = cuentas.map(c => c.cod_cuenta)
+
+  const { data: ordenesData } = codigoCuentas.length > 0
     ? await serverClient
         .from('ordenes_transferencia')
         .select('*')
-        .eq('cod_cuenta_origen', cuenta.cod_cuenta)
+        .in('cod_cuenta_origen', codigoCuentas)
         .order('fec_creacion', { ascending: false })
         .limit(5)
     : { data: [] }
 
-  // Auditoría de hoy (global para la tasa)
+  // Auditoría de hoy (global)
   const { data: auditData } = await serverClient
     .from('auditoria_transacciones')
     .select('estado_final')
@@ -55,39 +62,43 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* Tarjeta de cuenta */}
-      {cuenta ? (
-        <div className="rounded-2xl bg-banco-800 text-white p-5 sm:p-6 mb-6 sm:mb-8 shadow-lg">
-          <p className="text-sm text-blue-300 mb-1">Mi cuenta</p>
-          <p className="text-lg font-bold">{cuenta.nom_cliente}</p>
-          <p className="font-mono text-xs text-blue-300 mt-0.5 mb-4">{cuenta.cod_cuenta}</p>
-          <p className="text-3xl sm:text-4xl font-bold">
-            ${cuenta.sal_disponible.toLocaleString('es-CO')}
-          </p>
-          <p className="text-sm text-blue-300 mt-1">disponible COP</p>
-          {cuenta.sal_bloqueado > 0 && (
-            <p className="text-xs text-yellow-300 mt-2">
-              Bloqueado: ${cuenta.sal_bloqueado.toLocaleString('es-CO')}
-            </p>
-          )}
-          <div className="flex gap-3 mt-5 flex-wrap">
-            <Link
-              href="/transferencia"
-              className="rounded-lg bg-white text-banco-800 font-semibold px-4 py-2 text-sm hover:bg-blue-50 transition-colors"
-            >
-              Transferir
-            </Link>
-            <Link
-              href="/deposito"
-              className="rounded-lg bg-banco-600 hover:bg-banco-700 text-white font-semibold px-4 py-2 text-sm transition-colors"
-            >
-              Depositar
-            </Link>
-          </div>
+      {/* Tarjetas de cuentas */}
+      {cuentas.length === 0 ? (
+        <div className="rounded-xl bg-yellow-50 border border-yellow-200 p-5 mb-8 text-sm text-yellow-800">
+          No tienes cuentas bancarias registradas. Contacta al administrador.
         </div>
       ) : (
-        <div className="rounded-xl bg-yellow-50 border border-yellow-200 p-5 mb-8 text-sm text-yellow-800">
-          No tienes cuenta bancaria registrada. Contacta al administrador.
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6 sm:mb-8">
+          {cuentas.map(cuenta => (
+            <div key={cuenta.cod_cuenta} className="rounded-2xl bg-banco-800 text-white p-5 shadow-lg">
+              <p className="text-xs text-blue-300 font-semibold">{BANCOS[cuenta.cod_banco] ?? cuenta.cod_banco}</p>
+              <p className="text-sm font-bold mt-0.5">{cuenta.nom_cliente}</p>
+              <p className="font-mono text-xs text-blue-300 mt-0.5 mb-3">{cuenta.cod_cuenta}</p>
+              <p className="text-3xl font-bold">
+                ${cuenta.sal_disponible.toLocaleString('es-CO')}
+              </p>
+              <p className="text-xs text-blue-300 mt-1">disponible COP · {cuenta.tip_cuenta === 'A' ? 'Ahorros' : 'Corriente'}</p>
+              {cuenta.sal_bloqueado > 0 && (
+                <p className="text-xs text-yellow-300 mt-1">
+                  Bloqueado: ${cuenta.sal_bloqueado.toLocaleString('es-CO')}
+                </p>
+              )}
+              <div className="flex gap-3 mt-4 flex-wrap">
+                <Link
+                  href="/transferencia"
+                  className="rounded-lg bg-white text-banco-800 font-semibold px-3 py-1.5 text-xs hover:bg-blue-50 transition-colors"
+                >
+                  Transferir
+                </Link>
+                <Link
+                  href="/deposito"
+                  className="rounded-lg bg-banco-600 hover:bg-banco-700 text-white font-semibold px-3 py-1.5 text-xs transition-colors"
+                >
+                  Depositar
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
