@@ -14,7 +14,6 @@ import type {
 } from './tipos'
 
 const MONTO_MAX = 999_999_999
-const BANCO_PROPIO = '001'
 
 // ── Generar IDs secuenciales con fecha ──────────────────────────
 function generarId(prefijo: string): string {
@@ -145,7 +144,7 @@ export async function procesarTransferencia(
       num_orden:           numOrden,
       fec_creacion:        hoy,
       hoa_creacion:        hora,
-      cod_banco_origen:    BANCO_PROPIO,
+      cod_banco_origen:    cuentaOrigen.cod_banco,
       cod_cuenta_origen:   sol.cod_cuenta_origen,
       nom_cliente_origen:  cuentaOrigen.nom_cliente,
       cod_banco_destino:   sol.cod_banco_destino,
@@ -201,7 +200,14 @@ export async function procesarTransferencia(
     est_bloqueo: 'EJECUTADO'
   }).eq('num_bloqueo', numBloqueo)
 
-  // ── PASO 12: Registrar movimiento contable ──────────────────────
+  // ── PASO 12a: Acreditar cuenta destino ─────────────────────────
+  await serverClient.from('cuentas_clientes').update({
+    sal_disponible:         cuentaDestino.sal_disponible + sol.monto,
+    sal_total:              cuentaDestino.sal_total + sol.monto,
+    fec_ultima_transaccion: hoy,
+  }).eq('cod_cuenta', sol.cod_cuenta_destino)
+
+  // ── PASO 12b: Registrar movimiento contable (origen) ───────────
   const numMovim = generarId('MOV')
   await serverClient.from('movimientos_cuentas').insert({
     num_movimiento:  numMovim,
@@ -213,6 +219,21 @@ export async function procesarTransferencia(
     sal_anterior:    cuentaOrigen.sal_disponible,
     sal_posterior:   cuentaOrigen.sal_disponible - montoTotal,
     des_detalle:     `Transferencia a ${cuentaDestino.nom_cliente} + comisión`,
+    num_orden:       numOrden,
+  })
+
+  // ── PASO 12c: Registrar movimiento contable (destino) ──────────
+  const numMovimDest = generarId('MOV')
+  await serverClient.from('movimientos_cuentas').insert({
+    num_movimiento:  numMovimDest,
+    cod_cuenta:      sol.cod_cuenta_destino,
+    fec_movimiento:  hoy,
+    hoa_movimiento:  hora,
+    tip_movimiento:  'TRANSFERENCIA_ENTRADA',
+    mto_movimiento:  sol.monto,
+    sal_anterior:    cuentaDestino.sal_disponible,
+    sal_posterior:   cuentaDestino.sal_disponible + sol.monto,
+    des_detalle:     `Transferencia recibida de ${cuentaOrigen.nom_cliente}`,
     num_orden:       numOrden,
   })
 
